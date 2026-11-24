@@ -6,9 +6,9 @@ A high-performance, resilient AI chatbot featuring multi-turn SQLite conversatio
 
 ## 1. Live URLs
 
-- **Frontend**: `https://<your-frontend-deployment>.vercel.app` *(or Netlify / Cloudflare Pages)*
-- **Backend API**: `https://<your-backend-deployment>.onrender.com` *(or Railway / Fly.io)*
-- **Backend Health Check**: `https://<your-backend-deployment>.onrender.com/health`
+- **Frontend**: `https://llm-chatbot-lyftr-ai.vercel.app/`
+- **Backend API**: `https://llm-chatbot-lyftr-ai.onrender.com`
+- **Backend Health Check**: `https://llm-chatbot-lyftr-ai.onrender.com/health`
 
 *(Replace with your live deployed URLs once pushed to hosting platforms)*
 
