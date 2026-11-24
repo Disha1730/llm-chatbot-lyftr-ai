@@ -10,8 +10,6 @@ A high-performance, resilient AI chatbot featuring multi-turn SQLite conversatio
 - **Backend API**: [https://llm-chatbot-lyftr-ai.onrender.com](https://llm-chatbot-lyftr-ai.onrender.com)
 - **Backend Health Check**: [https://llm-chatbot-lyftr-ai.onrender.com/health](https://llm-chatbot-lyftr-ai.onrender.com/health)
 
-*(Replace with your live deployed URLs once pushed to hosting platforms)*
-
 ---
 
 ## 2. Run locally: with Docker and without
