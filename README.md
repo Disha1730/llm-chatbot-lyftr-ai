@@ -224,7 +224,7 @@ curl -s http://localhost:8000/sessions/s-curl-1/messages | jq .
 
 ---
 
-## 6. Bonus features: what you added beyond the requirements and why
+## 6. Bonus features: what I added beyond the requirements and why
 
 1. **Interactive In-UI Failover Simulator**: 
    - *Why*: While the backend supports the `X-Simulate-Failure` header via curl, having a visual dropdown in the web UI allows evaluators and demo recording to simulate `key_1=429`, `key_1=500`, and `*=429` on-the-fly without context switching to a terminal.
@@ -236,57 +236,3 @@ curl -s http://localhost:8000/sessions/s-curl-1/messages | jq .
    - Live display of the active client-generated `session_id` with a 1-click **New Session** button to test fresh multi-turn conversations without clearing browser cache.
 
 ---
-
-## 7. Step-by-Step Live Deployment Guide
-
-Follow these steps to deploy both backend and frontend to free public hosting.
-
-### Step 1: Push Code to GitHub
-```bash
-git init
-git add .
-git commit -m "feat: complete Lyftr AI full-stack resilient chatbot"
-git branch -M main
-git remote add origin https://github.com/<your-username>/<your-repo-name>.git
-git push -u origin main
-```
-
----
-
-### Step 2: Deploy Backend to Render (with Persistent Disk)
-1. Sign in to [Render](https://render.com).
-2. Click **New +** > **Web Service**.
-3. Select your GitHub repository.
-4. Choose **Docker** as the Runtime (it will automatically detect `backend/Dockerfile`), OR choose **Python 3**:
-   - **Root Directory**: `backend`
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-5. **Add Persistent Disk**:
-   - In the service settings, go to **Disks** > **Add Disk**.
-   - Name: `sqlite-data`
-   - Mount Path: `/data`
-   - Size: `1 GB`
-6. **Environment Variables**:
-   Add the following environment variables:
-   - `LLM_API_KEYS`: `your-key-1,your-key-2` *(e.g. Gemini API keys)*
-   - `LLM_MODEL`: `gemini/gemini-2.0-flash`
-   - `DATABASE_URL`: `sqlite:////data/app.db`
-   - `ENABLE_FAILURE_SIMULATION`: `true`
-   - `ALLOWED_ORIGINS`: `*` *(or update with your frontend domain)*
-7. Click **Deploy Web Service**.
-8. Note your public backend URL (e.g. `https://lyftr-backend.onrender.com`). Verify by visiting `https://lyftr-backend.onrender.com/health`.
-
----
-
-### Step 3: Deploy Frontend to Vercel (or Netlify)
-1. Sign in to [Vercel](https://vercel.com).
-2. Click **Add New...** > **Project** and select your GitHub repository.
-3. Configure Project Settings:
-   - **Framework Preset**: `Vite`
-   - **Root Directory**: Click edit and select `frontend`.
-4. **Environment Variables**:
-   - Name: `VITE_API_BASE_URL`
-   - Value: `https://lyftr-backend.onrender.com` *(your live Render backend URL from Step 2, no trailing slash)*
-5. Click **Deploy**.
-6. Once deployed, open your live frontend URL (e.g. `https://lyftr-frontend.vercel.app`).
-7. Test sending a message, a repeated message (to see `LLM_CACHE`), and failover using the simulation dropdown!
