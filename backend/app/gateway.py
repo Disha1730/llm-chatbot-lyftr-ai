@@ -69,7 +69,7 @@ def resolve_model_for_key(api_key: str, default_model: str) -> str:
     """Auto-detect provider model if default model does not match the key prefix."""
     if api_key.startswith("gsk_"):
         return "groq/llama-3.3-70b-versatile"
-    elif api_key.startswith("AIzaSy"):
+    elif api_key.startswith("AQ."):
         return "gemini/gemini-2.0-flash"
     elif api_key.startswith("sk-ant-"):
         return "claude-3-5-haiku-20241022"
