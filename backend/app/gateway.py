@@ -9,7 +9,9 @@ logger = logging.getLogger("gateway")
 
 class AllProvidersUnavailableException(Exception):
     """Raised when every key in the pool fails (rate limit, quota, 5xx, or simulated)."""
-    pass
+    def __init__(self, message: str = "all providers unavailable", last_error: str = ""):
+        super().__init__(message)
+        self.last_error = last_error
 
 
 def get_key_pool() -> List[Dict[str, str]]:
@@ -17,7 +19,9 @@ def get_key_pool() -> List[Dict[str, str]]:
     if not keys:
         # Fallback to at least 2 mock keys if none provided
         keys = ["mock-key-1", "mock-key-2"]
-    return [{"id": f"key_{i+1}", "api_key": key} for i, key in enumerate(keys)]
+    # Strip whitespace, quotes, and newlines from keys
+    cleaned_keys = [k.strip().strip("'").strip('"') for k in keys if k.strip()]
+    return [{"id": f"key_{i+1}", "api_key": key} for i, key in enumerate(cleaned_keys)]
 
 
 def parse_simulation_header(header: Optional[str]) -> Dict[str, int]:
@@ -67,15 +71,16 @@ def is_placeholder_key(api_key: str) -> bool:
 
 def resolve_model_for_key(api_key: str, default_model: str) -> str:
     """Auto-detect provider model if default model does not match the key prefix."""
-    if api_key.startswith("gsk_"):
+    k = api_key.strip().strip("'").strip('"')
+    if k.startswith("gsk_"):
         return "groq/llama-3.3-70b-versatile"
-    elif api_key.startswith("AQ."):
+    elif k.startswith("AQ") or k.startswith("AIzaSy"):
         return "gemini/gemini-2.0-flash"
-    elif api_key.startswith("sk-ant-"):
+    elif k.startswith("sk-ant-"):
         return "claude-3-5-haiku-20241022"
-    elif api_key.startswith("sk-or-"):
+    elif k.startswith("sk-or-"):
         return "openrouter/auto"
-    elif api_key.startswith("sk-") and not api_key.startswith("sk-ant-") and not api_key.startswith("sk-or-"):
+    elif k.startswith("sk-") and not k.startswith("sk-ant-") and not k.startswith("sk-or-"):
         return "gpt-4o-mini"
     return default_model
 
@@ -95,6 +100,7 @@ async def execute_completion(
     sim_rules = parse_simulation_header(simulation_header)
 
     fallback_attempts = 0
+    last_error_msg = ""
 
     for key_info in key_pool:
         key_id = key_info["id"]
@@ -155,11 +161,12 @@ async def execute_completion(
             err_msg = f"Key {key_id} failed: {type(e).__name__}: {str(e)}"
             logger.warning(err_msg)
             print(f"[GATEWAY] {err_msg}", flush=True)
+            last_error_msg = f"{type(e).__name__}: {str(e)}"
             fallback_attempts += 1
             # Continue to next key in the pool
             continue
 
     # If all keys failed
     logger.error("All providers exhausted.")
-    print("[GATEWAY] All providers exhausted. Returning 503.", flush=True)
-    raise AllProvidersUnavailableException("all providers unavailable")
+    print(f"[GATEWAY] All providers exhausted. Last error: {last_error_msg}", flush=True)
+    raise AllProvidersUnavailableException("all providers unavailable", last_error=last_error_msg)

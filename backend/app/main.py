@@ -66,9 +66,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(AllProvidersUnavailableException)
 async def providers_unavailable_handler(request: Request, exc: AllProvidersUnavailableException):
+    headers = {}
+    if getattr(exc, "last_error", None):
+        headers["X-Error-Reason"] = str(exc.last_error)[:300]
     return JSONResponse(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        content={"detail": "all providers unavailable"}
+        content={"detail": "all providers unavailable"},
+        headers=headers
     )
 
 
