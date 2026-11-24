@@ -8,7 +8,7 @@ export default function ChatInput({ onSendMessage, disabled }) {
     const trimmed = text.trim();
     if (!trimmed || disabled) return;
     onSendMessage(trimmed);
-    setText(''); // Empty after sending as strictly required
+    setText(''); // Empty after sending as strictly required by contract
   };
 
   const handleKeyDown = (e) => {
@@ -19,7 +19,7 @@ export default function ChatInput({ onSendMessage, disabled }) {
   };
 
   return (
-    <div className="relative flex items-center bg-slate-800 border border-slate-700 rounded-xl p-2 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition-all">
+    <div className="relative flex items-center liquid-glass-input rounded-2xl p-2 focus-within:border-emerald-500/50 focus-within:shadow-[0_0_25px_rgba(16,185,129,0.15)] transition-all">
       <textarea
         data-testid="chat-input"
         value={text}
@@ -28,17 +28,17 @@ export default function ChatInput({ onSendMessage, disabled }) {
         placeholder="Type your message here... (Enter to send, Shift+Enter for new line)"
         disabled={disabled}
         rows={1}
-        className="w-full bg-transparent text-slate-100 placeholder-slate-400 focus:outline-none resize-none px-3 py-2 text-sm md:text-base max-h-32 min-h-[44px]"
+        className="w-full bg-transparent text-zinc-100 placeholder-zinc-500 focus:outline-none resize-none px-3.5 py-2.5 text-sm md:text-base max-h-32 min-h-[44px]"
       />
       <button
         type="button"
         data-testid="send-button"
         onClick={handleSend}
         disabled={disabled || !text.trim()}
-        className={`ml-2 p-2.5 rounded-lg flex items-center justify-center transition-all ${
+        className={`ml-2 p-3 rounded-xl flex items-center justify-center transition-all ${
           disabled || !text.trim()
-            ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-            : 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-sm'
+            ? 'bg-white/[0.04] text-zinc-600 border border-white/5 cursor-not-allowed'
+            : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-zinc-950 font-semibold shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] hover:scale-[1.03] active:scale-[0.97]'
         }`}
         title="Send message (Enter)"
       >
