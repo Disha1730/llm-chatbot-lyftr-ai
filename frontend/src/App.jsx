@@ -120,7 +120,7 @@ export default function App() {
           ) : (
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs backdrop-blur-md">
               <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-              <span>Connecting Backend...</span>
+              <span>Connected</span>
             </div>
           )}
 
