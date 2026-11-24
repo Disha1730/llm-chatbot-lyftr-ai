@@ -75,7 +75,7 @@ def resolve_model_for_key(api_key: str, default_model: str) -> str:
     if k.startswith("gsk_"):
         return "groq/llama-3.3-70b-versatile"
     elif k.startswith("AQ") or k.startswith("AIzaSy"):
-        return "gemini/gemini-2.0-flash"
+        return "gemini/gemini-3.8-flash"
     elif k.startswith("sk-ant-"):
         return "claude-3-5-haiku-20241022"
     elif k.startswith("sk-or-"):

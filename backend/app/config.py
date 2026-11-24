@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./app.db"
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000,*"
     ENABLE_FAILURE_SIMULATION: bool = True
-    LLM_MODEL: str = "gemini/gemini-2.0-flash"
+    LLM_MODEL: str = "gemini/gemini-3.8-flash"
     DEFAULT_SYSTEM_PROMPT: str = "You are a helpful, accurate, and concise AI assistant."
 
     @property
