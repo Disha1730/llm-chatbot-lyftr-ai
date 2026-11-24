@@ -50,6 +50,36 @@ def estimate_tokens(text: str) -> int:
     return max(1, int(len(words) * 1.33))
 
 
+def is_placeholder_key(api_key: str) -> bool:
+    """Determines whether a key is a mock, test, or placeholder string."""
+    k = api_key.lower().strip()
+    return (
+        k.startswith("mock-")
+        or k.startswith("test")
+        or k.startswith("placeholder")
+        or "placeholder" in k
+        or "your-" in k
+        or "example" in k
+        or k in {"key1", "key2", "key_1", "key_2", "dummy"}
+        or len(k) < 15
+    )
+
+
+def resolve_model_for_key(api_key: str, default_model: str) -> str:
+    """Auto-detect provider model if default model does not match the key prefix."""
+    if api_key.startswith("gsk_"):
+        return "groq/llama-3.3-70b-versatile"
+    elif api_key.startswith("AIzaSy"):
+        return "gemini/gemini-2.0-flash"
+    elif api_key.startswith("sk-ant-"):
+        return "claude-3-5-haiku-20241022"
+    elif api_key.startswith("sk-or-"):
+        return "openrouter/auto"
+    elif api_key.startswith("sk-") and not api_key.startswith("sk-ant-") and not api_key.startswith("sk-or-"):
+        return "gpt-4o-mini"
+    return default_model
+
+
 async def execute_completion(
     messages: List[Dict[str, str]],
     model: Optional[str] = None,
@@ -60,7 +90,7 @@ async def execute_completion(
     Returns: (reply, input_tokens, output_tokens, winning_key_id, fallback_attempts)
     Raises: AllProvidersUnavailableException if all keys fail.
     """
-    target_model = model or settings.LLM_MODEL
+    base_model = model or settings.LLM_MODEL
     key_pool = get_key_pool()
     sim_rules = parse_simulation_header(simulation_header)
 
@@ -69,6 +99,7 @@ async def execute_completion(
     for key_info in key_pool:
         key_id = key_info["id"]
         api_key = key_info["api_key"]
+        target_model = resolve_model_for_key(api_key, base_model)
 
         # Check for simulated failure
         simulated_status = None
@@ -79,25 +110,29 @@ async def execute_completion(
 
         if simulated_status is not None:
             logger.info(f"Simulating failure {simulated_status} for {key_id}")
+            print(f"[GATEWAY] Simulating failure {simulated_status} for {key_id}", flush=True)
             fallback_attempts += 1
             continue
 
-        # Real inference attempt
-        try:
-            # If the key is a mock key (e.g. during offline test), provide deterministic mock response
-            if api_key.startswith("mock-") or api_key == "test-key":
-                # Simulated successful response for mock/offline testing
-                reply_text = f"Mock response from {key_id} using {target_model}."
-                input_tokens = sum(len(m.get("content", "").split()) for m in messages) + 10
-                output_tokens = len(reply_text.split())
-                return reply_text, input_tokens, output_tokens, key_id, fallback_attempts
+        # Check for mock / placeholder key
+        if is_placeholder_key(api_key):
+            print(f"[GATEWAY] Key {key_id} is a mock/placeholder key. Returning simulated response.", flush=True)
+            user_msg = messages[-1].get("content", "") if messages else ""
+            reply_text = f"Response from {key_id} ({target_model}): Received '{user_msg}'."
+            input_tokens = sum(len(m.get("content", "").split()) for m in messages) + 12
+            output_tokens = len(reply_text.split())
+            return reply_text, input_tokens, output_tokens, key_id, fallback_attempts
 
-            # Real LiteLLM call
+        # Real inference attempt with LiteLLM
+        try:
+            print(f"[GATEWAY] Attempting completion with {key_id} on {target_model}...", flush=True)
             response = await litellm.acompletion(
                 model=target_model,
                 messages=messages,
                 api_key=api_key,
-                temperature=0.7
+                temperature=0.7,
+                timeout=15,
+                num_retries=0
             )
 
             reply_text = response.choices[0].message.content or ""
@@ -113,14 +148,18 @@ async def execute_completion(
             if output_tokens is None:
                 output_tokens = estimate_tokens(reply_text)
 
+            print(f"[GATEWAY] Key {key_id} succeeded on {target_model}.", flush=True)
             return reply_text, input_tokens, output_tokens, key_id, fallback_attempts
 
         except Exception as e:
-            logger.warning(f"Key {key_id} failed: {type(e).__name__}: {str(e)}")
+            err_msg = f"Key {key_id} failed: {type(e).__name__}: {str(e)}"
+            logger.warning(err_msg)
+            print(f"[GATEWAY] {err_msg}", flush=True)
             fallback_attempts += 1
             # Continue to next key in the pool
             continue
 
     # If all keys failed
     logger.error("All providers exhausted.")
+    print("[GATEWAY] All providers exhausted. Returning 503.", flush=True)
     raise AllProvidersUnavailableException("all providers unavailable")
