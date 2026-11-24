@@ -89,6 +89,17 @@ async def generic_exception_handler(request: Request, exc: Exception):
     )
 
 
+# Root endpoint for platform health checks and direct browser visits
+@app.get("/")
+async def root():
+    return {
+        "status": "ok",
+        "service": "Lyftr AI Chatbot Gateway",
+        "health": "/health",
+        "docs": "/docs"
+    }
+
+
 # 1. GET /health
 @app.get("/health", response_model=HealthResponse)
 async def health_check():

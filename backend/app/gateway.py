@@ -4,6 +4,10 @@ from typing import Dict, List, Optional, Tuple, Any
 import litellm
 from app.config import settings
 
+# Tell LiteLLM to drop unsupported parameters (e.g. temperature on gemini-3.8-flash,
+# gemini-3.5-flash-lite, and reasoning models) instead of raising UnsupportedParamsError.
+litellm.drop_params = True
+
 logger = logging.getLogger("gateway")
 
 
@@ -70,17 +74,29 @@ def is_placeholder_key(api_key: str) -> bool:
 
 
 def resolve_model_for_key(api_key: str, default_model: str) -> str:
-    """Auto-detect provider model if default model does not match the key prefix."""
+    """Auto-detect provider model if default model does not match the key prefix, but respect user-configured model if compatible."""
     k = api_key.strip().strip("'").strip('"')
+    dm = (default_model or "").lower()
+
     if k.startswith("gsk_"):
+        if "groq" in dm or "llama" in dm:
+            return default_model
         return "groq/llama-3.3-70b-versatile"
     elif k.startswith("AQ") or k.startswith("AIzaSy"):
-        return "gemini/gemini-3.8-flash"
+        if "gemini" in dm:
+            return default_model
+        return "gemini/gemini-2.5-flash"
     elif k.startswith("sk-ant-"):
+        if "claude" in dm or "anthropic" in dm:
+            return default_model
         return "claude-3-5-haiku-20241022"
     elif k.startswith("sk-or-"):
+        if "openrouter" in dm:
+            return default_model
         return "openrouter/auto"
     elif k.startswith("sk-") and not k.startswith("sk-ant-") and not k.startswith("sk-or-"):
+        if any(p in dm for p in ("gpt", "openai", "o1", "o3")):
+            return default_model
         return "gpt-4o-mini"
     return default_model
 
